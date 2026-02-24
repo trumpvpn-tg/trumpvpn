@@ -323,22 +323,13 @@
         if (!done) { done = true; resolve({ index: index, ok: false }); }
       }, CHECK_TIMEOUT);
 
-      // Try fetching with no-cors (img trick for cross-origin)
-      var img = new Image();
-      img.onload = function() {
-        if (!done) { done = true; clearTimeout(timer); resolve({ index: index, ok: true }); }
-      };
-      img.onerror = function() {
-        // onerror can fire even if site is up (CORS), try fetch as backup
-        fetch(domain.url, { mode: 'no-cors', cache: 'no-store' })
-          .then(function() {
-            if (!done) { done = true; clearTimeout(timer); resolve({ index: index, ok: true }); }
-          })
-          .catch(function() {
-            if (!done) { done = true; clearTimeout(timer); resolve({ index: index, ok: false }); }
-          });
-      };
-      img.src = domain.url + '/favicon.ico?t=' + Date.now();
+      fetch(domain.url + '/api/health', { mode: 'cors', cache: 'no-store' })
+        .then(function(r) {
+          if (!done) { done = true; clearTimeout(timer); resolve({ index: index, ok: r.ok }); }
+        })
+        .catch(function() {
+          if (!done) { done = true; clearTimeout(timer); resolve({ index: index, ok: false }); }
+        });
     });
   }
 
