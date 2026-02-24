@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TrumpVPN — Подключение</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Manrope', sans-serif;
+    background: #06060a;
+    color: #f0f0f0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .bg-orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(120px);
+    opacity: .15;
+    pointer-events: none;
+    animation: drift 20s infinite alternate ease-in-out;
+  }
+  .bg-orb.a { width: 500px; height: 500px; background: #D4A853; top: -20%; left: -10%; }
+  .bg-orb.b { width: 400px; height: 400px; background: #0a84ff; bottom: -15%; right: -10%; animation-delay: -8s; }
+
+  @keyframes drift {
+    0% { transform: translate(0, 0) scale(1); }
+    100% { transform: translate(40px, 30px) scale(1.1); }
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    padding: 40px 30px;
+    max-width: 420px;
+    width: 90vw;
+  }
+
+  .logo-wrap {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 24px;
+    border-radius: 22px;
+    background: linear-gradient(135deg, rgba(212,168,83,.12), rgba(212,168,83,.04));
+    border: 1px solid rgba(212,168,83,.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  .logo-wrap svg {
+    width: 40px;
+    height: 40px;
+  }
+
+  .pulse-ring {
+    position: absolute;
+    inset: -8px;
+    border-radius: 26px;
+    border: 1px solid rgba(212,168,83,.1);
+    animation: pulse 2.5s infinite ease-out;
+  }
+  .pulse-ring:nth-child(2) { animation-delay: .8s; }
+
+  @keyframes pulse {
+    0% { transform: scale(1); opacity: .4; }
+    100% { transform: scale(1.25); opacity: 0; }
+  }
+
+  h1 {
+    font-size: 26px;
+    font-weight: 800;
+    margin-bottom: 6px;
+    letter-spacing: -.5px;
+  }
+  h1 span { color: #D4A853; }
+
+  .subtitle {
+    font-size: 14px;
+    color: rgba(255,255,255,.3);
+    margin-bottom: 36px;
+  }
+
+  .status-box {
+    background: rgba(255,255,255,.03);
+    border: 1px solid rgba(255,255,255,.06);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 24px;
+  }
+
+  .status-text {
+    font-size: 14px;
+    color: rgba(255,255,255,.5);
+    margin-bottom: 16px;
+  }
+
+  .loader {
+    display: inline-block;
+    width: 36px;
+    height: 36px;
+    border: 3px solid rgba(212,168,83,.15);
+    border-top-color: #D4A853;
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .domain-list {
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .domain-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: rgba(255,255,255,.02);
+    border: 1px solid rgba(255,255,255,.04);
+    font-size: 13px;
+    transition: all .3s;
+  }
+
+  .domain-row .name {
+    color: rgba(255,255,255,.4);
+    font-weight: 600;
+  }
+
+  .domain-row .badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 8px;
+    text-transform: uppercase;
+    letter-spacing: .3px;
+  }
+
+  .badge.checking {
+    color: rgba(255,255,255,.25);
+    background: rgba(255,255,255,.04);
+  }
+  .badge.ok {
+    color: #30d158;
+    background: rgba(48,209,88,.08);
+    border: 1px solid rgba(48,209,88,.12);
+  }
+  .badge.fail {
+    color: #ff453a;
+    background: rgba(255,69,58,.08);
+    border: 1px solid rgba(255,69,58,.12);
+  }
+
+  .domain-row.active {
+    border-color: rgba(48,209,88,.15);
+    background: rgba(48,209,88,.04);
+  }
+  .domain-row.active .name { color: #30d158; }
+
+  .redirect-msg {
+    display: none;
+    margin-top: 20px;
+    padding: 14px 18px;
+    border-radius: 12px;
+    background: rgba(48,209,88,.06);
+    border: 1px solid rgba(48,209,88,.12);
+    font-size: 13px;
+    color: #30d158;
+    font-weight: 600;
+  }
+
+  .redirect-msg.show { display: block; }
+
+  .error-msg {
+    display: none;
+    margin-top: 20px;
+    padding: 14px 18px;
+    border-radius: 12px;
+    background: rgba(255,69,58,.06);
+    border: 1px solid rgba(255,69,58,.12);
+    font-size: 13px;
+    color: #ff453a;
+  }
+  .error-msg.show { display: block; }
+
+  .manual-links {
+    display: none;
+    margin-top: 16px;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .manual-links.show { display: flex; }
+
+  .manual-links a {
+    display: block;
+    padding: 12px 16px;
+    border-radius: 12px;
+    background: rgba(212,168,83,.06);
+    border: 1px solid rgba(212,168,83,.12);
+    color: #D4A853;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all .2s;
+  }
+  .manual-links a:hover {
+    background: rgba(212,168,83,.12);
+  }
+
+  .tg-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 20px;
+    color: rgba(255,255,255,.2);
+    font-size: 12px;
+    text-decoration: none;
+    transition: color .2s;
+  }
+  .tg-link:hover { color: rgba(255,255,255,.4); }
+  .tg-link svg { width: 14px; height: 14px; fill: currentColor; }
+
+  .footer {
+    margin-top: 32px;
+    font-size: 11px;
+    color: rgba(255,255,255,.1);
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-orb a"></div>
+<div class="bg-orb b"></div>
+
+<div class="container">
+  <div class="logo-wrap">
+    <div class="pulse-ring"></div>
+    <div class="pulse-ring"></div>
+    <svg viewBox="0 0 40 40" fill="none">
+      <path d="M20 4L34 12v16L20 36 6 28V12L20 4z" fill="rgba(212,168,83,.15)" stroke="#D4A853" stroke-width="1.5"/>
+      <path d="M20 12v16M12 16l8 4 8-4M12 24l8 4 8-4" stroke="#D4A853" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+  </div>
+
+  <h1>Trump<span>VPN</span></h1>
+  <p class="subtitle">Поиск рабочего сервера...</p>
+
+  <div class="status-box">
+    <div class="status-text" id="statusText">Проверяем доступность серверов</div>
+    <div class="loader" id="loader"></div>
+
+    <div class="domain-list" id="domainList"></div>
+  </div>
+
+  <div class="redirect-msg" id="redirectMsg">
+    Перенаправляем на рабочий сервер...
+  </div>
+
+  <div class="error-msg" id="errorMsg">
+    Все серверы временно недоступны. Попробуйте позже или используйте ссылки ниже:
+  </div>
+
+  <div class="manual-links" id="manualLinks"></div>
+
+  <a href="https://t.me/TrumpVPNQ" target="_blank" class="tg-link">
+    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 0 0-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/></svg>
+    Telegram-поддержка
+  </a>
+
+  <div class="footer">TrumpVPN &copy; 2025</div>
+</div>
+
+<script>
+(function() {
+  // ====================================
+  // КОНФИГУРАЦИЯ — УКАЖИ СВОИ ДОМЕНЫ
+  // ====================================
+  var DOMAINS = [
+    { name: 'trumpvpn.pro', url: 'https://panel.trumpvpn.pro' },
+    // Добавь зеркала:
+    // { name: 'trumpvpn.xyz', url: 'https://panel.trumpvpn.xyz' },
+    // { name: 'trumpvpn.click', url: 'https://panel.trumpvpn.click' },
+  ];
+
+  var REDIRECT_DELAY = 1500;
+  var CHECK_TIMEOUT = 6000;
+  // ====================================
+
+  var listEl = document.getElementById('domainList');
+  var statusEl = document.getElementById('statusText');
+  var loaderEl = document.getElementById('loader');
+  var redirectEl = document.getElementById('redirectMsg');
+  var errorEl = document.getElementById('errorMsg');
+  var manualEl = document.getElementById('manualLinks');
+
+  // Render domain rows
+  DOMAINS.forEach(function(d, i) {
+    var row = document.createElement('div');
+    row.className = 'domain-row';
+    row.id = 'row-' + i;
+    row.innerHTML = '<span class="name">' + d.name + '</span><span class="badge checking" id="badge-' + i + '">проверка...</span>';
+    listEl.appendChild(row);
+  });
+
+  function checkDomain(domain, index) {
+    return new Promise(function(resolve) {
+      var done = false;
+      var timer = setTimeout(function() {
+        if (!done) { done = true; resolve({ index: index, ok: false }); }
+      }, CHECK_TIMEOUT);
+
+      // Try fetching with no-cors (img trick for cross-origin)
+      var img = new Image();
+      img.onload = function() {
+        if (!done) { done = true; clearTimeout(timer); resolve({ index: index, ok: true }); }
+      };
+      img.onerror = function() {
+        // onerror can fire even if site is up (CORS), try fetch as backup
+        fetch(domain.url, { mode: 'no-cors', cache: 'no-store' })
+          .then(function() {
+            if (!done) { done = true; clearTimeout(timer); resolve({ index: index, ok: true }); }
+          })
+          .catch(function() {
+            if (!done) { done = true; clearTimeout(timer); resolve({ index: index, ok: false }); }
+          });
+      };
+      img.src = domain.url + '/favicon.ico?t=' + Date.now();
+    });
+  }
+
+  function updateBadge(index, ok) {
+    var badge = document.getElementById('badge-' + index);
+    var row = document.getElementById('row-' + index);
+    if (ok) {
+      badge.className = 'badge ok';
+      badge.textContent = 'доступен';
+      row.className = 'domain-row active';
+    } else {
+      badge.className = 'badge fail';
+      badge.textContent = 'недоступен';
+    }
+  }
+
+  async function run() {
+    var working = null;
+
+    for (var i = 0; i < DOMAINS.length; i++) {
+      var result = await checkDomain(DOMAINS[i], i);
+      updateBadge(result.index, result.ok);
+
+      if (result.ok && !working) {
+        working = DOMAINS[i];
+      }
+    }
+
+    loaderEl.style.display = 'none';
+
+    if (working) {
+      statusEl.textContent = 'Сервер найден';
+      redirectEl.classList.add('show');
+
+      setTimeout(function() {
+        window.location.href = working.url;
+      }, REDIRECT_DELAY);
+    } else {
+      statusEl.textContent = 'Серверы недоступны';
+      errorEl.classList.add('show');
+      manualEl.classList.add('show');
+
+      // Show manual links
+      DOMAINS.forEach(function(d) {
+        var a = document.createElement('a');
+        a.href = d.url;
+        a.target = '_blank';
+        a.textContent = d.name + ' →';
+        manualEl.appendChild(a);
+      });
+    }
+  }
+
+  run();
+})();
+</script>
+</body>
+</html>
