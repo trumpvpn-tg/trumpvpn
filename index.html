@@ -3,6 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#D4A853">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TrumpVPN">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
 <title>TrumpVPN — Подключение</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap');
@@ -90,6 +96,31 @@
     color: rgba(255,255,255,.3);
     margin-bottom: 36px;
   }
+
+  /* Install banner */
+  .install-bar {
+    display: none;
+    margin-bottom: 20px;
+    padding: 14px 18px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, rgba(212,168,83,.1), rgba(212,168,83,.04));
+    border: 1px solid rgba(212,168,83,.18);
+    cursor: pointer;
+    transition: transform .2s, box-shadow .2s;
+  }
+  .install-bar:active { transform: scale(.97); }
+  .install-bar.show { display: flex; align-items: center; gap: 14px; }
+
+  .install-bar .ib-icon {
+    width: 42px; height: 42px; border-radius: 12px;
+    background: rgba(212,168,83,.12);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .install-bar .ib-icon svg { width: 22px; height: 22px; }
+
+  .install-bar .ib-text { text-align: left; }
+  .install-bar .ib-title { font-size: 14px; font-weight: 700; color: #D4A853; }
+  .install-bar .ib-desc { font-size: 12px; color: rgba(255,255,255,.35); margin-top: 2px; }
 
   .status-box {
     background: rgba(255,255,255,.03);
@@ -259,6 +290,20 @@
   <h1>Trump<span>VPN</span></h1>
   <p class="subtitle">Поиск рабочего сервера...</p>
 
+  <!-- Install banner -->
+  <div class="install-bar" id="installBar">
+    <div class="ib-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#D4A853" stroke-width="2" stroke-linecap="round">
+        <path d="M12 5v10M8 11l4 4 4-4"/>
+        <path d="M4 17v2a1 1 0 001 1h14a1 1 0 001-1v-2"/>
+      </svg>
+    </div>
+    <div class="ib-text">
+      <div class="ib-title">Установить приложение</div>
+      <div class="ib-desc">Добавить TrumpVPN на главный экран</div>
+    </div>
+  </div>
+
   <div class="status-box">
     <div class="status-text" id="statusText">Проверяем доступность серверов</div>
     <div class="loader" id="loader"></div>
@@ -285,20 +330,57 @@
 </div>
 
 <script>
+// ====================================
+// PWA: Service Worker + Install Prompt
+// ====================================
+var _deferredInstall = null;
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(function() {});
+}
+
+window.addEventListener('beforeinstallprompt', function(e) {
+  e.preventDefault();
+  _deferredInstall = e;
+  document.getElementById('installBar').classList.add('show');
+});
+
+document.getElementById('installBar').addEventListener('click', function() {
+  if (!_deferredInstall) return;
+  _deferredInstall.prompt();
+  _deferredInstall.userChoice.then(function() { _deferredInstall = null; });
+  document.getElementById('installBar').classList.remove('show');
+});
+
+window.addEventListener('appinstalled', function() {
+  document.getElementById('installBar').classList.remove('show');
+  _deferredInstall = null;
+});
+
+// iOS Safari — show manual instruction
 (function() {
-  // ====================================
-  // КОНФИГУРАЦИЯ — УКАЖИ СВОИ ДОМЕНЫ
-  // ====================================
+  var ua = navigator.userAgent;
+  var ios = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  var standalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+
+  if (ios && !standalone && !_deferredInstall) {
+    var bar = document.getElementById('installBar');
+    bar.classList.add('show');
+    bar.querySelector('.ib-desc').textContent = 'Нажмите «Поделиться» → «На экран Домой»';
+    bar.onclick = null;
+  }
+})();
+
+// ====================================
+// DOMAIN CHECK & REDIRECT
+// ====================================
+(function() {
   var DOMAINS = [
     { name: 'trumpvpn.pro', url: 'https://panel.trumpvpn.pro' },
-    // Добавь зеркала:
-    // { name: 'trumpvpn.xyz', url: 'https://panel.trumpvpn.xyz' },
-    // { name: 'trumpvpn.click', url: 'https://panel.trumpvpn.click' },
   ];
 
   var REDIRECT_DELAY = 1500;
   var CHECK_TIMEOUT = 6000;
-  // ====================================
 
   var listEl = document.getElementById('domainList');
   var statusEl = document.getElementById('statusText');
@@ -307,7 +389,6 @@
   var errorEl = document.getElementById('errorMsg');
   var manualEl = document.getElementById('manualLinks');
 
-  // Render domain rows
   DOMAINS.forEach(function(d, i) {
     var row = document.createElement('div');
     row.className = 'domain-row';
@@ -352,10 +433,7 @@
     for (var i = 0; i < DOMAINS.length; i++) {
       var result = await checkDomain(DOMAINS[i], i);
       updateBadge(result.index, result.ok);
-
-      if (result.ok && !working) {
-        working = DOMAINS[i];
-      }
+      if (result.ok && !working) working = DOMAINS[i];
     }
 
     loaderEl.style.display = 'none';
@@ -363,16 +441,12 @@
     if (working) {
       statusEl.textContent = 'Сервер найден';
       redirectEl.classList.add('show');
-
-      setTimeout(function() {
-        window.location.href = working.url;
-      }, REDIRECT_DELAY);
+      setTimeout(function() { window.location.href = working.url; }, REDIRECT_DELAY);
     } else {
       statusEl.textContent = 'Серверы недоступны';
       errorEl.classList.add('show');
       manualEl.classList.add('show');
 
-      // Show manual links
       DOMAINS.forEach(function(d) {
         var a = document.createElement('a');
         a.href = d.url;
